@@ -1,0 +1,1047 @@
+|--------------------------------------------------------------------------------
+|
+| DC to AA / Vice versa
+| DCCONV.mac
+| Author      : TreeHuginDruid
+| Version     : 2.8
+| Syntax      : Syntax: /macro DCCONV \amParam0\ax \amParam1\ax
+|				Where: (\amParam0\ax = \agDC\ax or \agAA\ax  or \agCONVERT\ax or \agGIMME\ax) and (\amParam1\ax = # to convert or ALL)
+|
+|				Example: /macro DCCONV \amDC\ax \ay9\ax:  Converts \ay9\ax DC to \ay3\ax AA.
+|				Example: /macro DCCONV \amAA\ax \ay10\ax:  Converts \ay10\ax AA to \ay30\ax DC.
+|				Example: /macro DCCONV \amALL-AA\ax: Converts \arALL UNSPENT\ax AA to Alt Currency [\atDiamond Coin\ax].
+|				Example: /macro DCCONV \amALL-DC\ax: Converts \arALL COMBINED DC\ax to AA.
+|				Example: /macro DCCONV \amEXCHANGE\ax: Exchanges \arALL\ax Alt Currency [\atDiamond Coin\ax] ---> [\atDiamond Coin\ax].
+|				Example: /macro DCCONV \amGIMME\ax: Makes \arALL\ax group memebers give you \arALL\ax their stacked [\atDiamond Coin\ax].
+|               Example: /macro DCCONV \amSTICKEMUP\ax: Makes \arALL\ax group memebers give you \arALL\ax their [\agCASH\ax].
+|                        ---- Use GIMME / STICKEMUP option(s) only on ONE (1) CHARACTER --- NEVER have the group run with that option !
+|
+|--------------------------------------------------------------------------------
+#turbo 80
+
+|--------------------------------------------------------------------------------
+| Main Sub
+|--------------------------------------------------------------------------------
+  Sub Main
+
+|------------------------------------------------------------------------- 
+  /declare MacroVersion				string	outer 	2.9
+  
+  /declare CurrentGroupMemberTrader	string	outer	NULL
+  /declare CurrentZone				string	outer 	${Zone.Name}
+  /declare ZoneConvNPC				string	outer 	NULL
+  /declare ZoneConvNPCID			int		outer 	NULL
+    
+  /declare AmmountVal				int	outer	0
+  /declare ConversionRate			int	outer 	3 
+  
+  /declare LocalExchangeValue 		int	outer	0
+  /declare GlobalAAExchangeValue	int	outer	0
+  /declare GlobalDCExchangeValue	int	outer	0
+
+  /declare CurrentAA				int	outer	0
+  /declare CurrentDC				int	outer	0
+  /declare CurrentDCAC				int outer   0
+   
+  /declare CombinedTotalDC			int	outer	0
+  
+  /declare GlobalParam0				string	outer	${Param0}
+  /declare GlobalParam1				int		outer	${Param1}
+  /declare GlobalParam2				string	outer	${Param2}
+  /declare GlobalParam3				int		outer	${Param3}
+  
+  /declare MyDCSellPrice			string	outer	${Math.Calc[${FindItem[=Diamond Coin].Value}/1000]}
+  /declare GroupMemberCount 		int 	outer 	${Group.Members}
+  /declare iGroupMemberTrade		int		outer	NULL
+  
+  /declare PauseUntilTradeDone		int	outer	1
+  /declare ValidCommSetup			int	outer	0
+  /declare ValidCommType			string	outer	NULL
+  
+  /declare PackSlot 				int outer 0
+  /declare ItemSlot 				int outer 0
+  
+  /declare DebugMacro				bool	outer	FALSE
+|-------------------------------------------------------------------------
+
+  | Clear targets for routines.
+  /squelch /target clear
+  
+  /echo |-------------------------------------------------------------|
+  /echo \ar***\ax Macro: (\ag${Macro.Name}\ax) Version: (\ag${MacroVersion}\ax) \ar***\ax
+  /echo |-------------------------------------------------------------|
+  
+  |----------------------
+  ; Update the DC and Alternate DC Currency ammount.
+  /call CalculateMyAssets
+  |----------------------
+  
+  /if (${DebugMacro}) /echo Parameters passed were: (\at${GlobalParam0}\ax) (\at${GlobalParam1}\ax) (\at${GlobalParam2}\ax) (\at${GlobalParam3}\ax)
+  
+  |-----------------------------
+  ; Display Syntax help if they failed to supply correct syntax
+  /if (!${Defined[GlobalParam0]}) /call DisplaySyntax
+
+  /if (${GlobalParam0.NotEqual[EXCHANGE]} && ${GlobalParam0.NotEqual[GIMME]} && ${GlobalParam0.NotEqual[TRADEMYDC]} && ${GlobalParam0.NotEqual[STICKEMUP]} && ${GlobalParam0.NotEqual[TRADEMYCASH]} && ${GlobalParam0.NotEqual[AA]} && ${GlobalParam0.NotEqual[DC]} && ${GlobalParam0.NotEqual[ALL-AA]} && ${GlobalParam0.NotEqual[ALL-DC]}) /call DisplaySyntax
+
+  /if (${GlobalParam0.Equal[DC]} || ${GlobalParam0.Equal[AA]}) {
+	  /if (!${Defined[GlobalParam1]} || (${GlobalParam1}==0)) /call DisplaySyntax
+  }
+  
+  
+  |-----------------------------  
+  | --- SET COMM TYPE ( PICK ONE !!!!! )
+  |-----------------------------
+  
+  /if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2DanNet
+  |/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2EQBC
+  |-----------------------------  
+  
+  
+  |-----------------------------
+  | Dont bother checking zone or naving to ZoneConvNPC
+  |-----------------------------
+  /if (${GlobalParam0.NotEqual[EXCHANGE]} && ${GlobalParam0.NotEqual[GIMME]} && ${GlobalParam0.NotEqual[TRADEMYDC]} && ${GlobalParam0.NotEqual[STICKEMUP]} && ${GlobalParam0.NotEqual[TRADEMYCASH]}) /call CheckZoneParameters
+  /call ShowMyAssets
+  |-----------------------------
+  
+  |-----------------------------
+  /if (${Defined[Param0]}) {
+  |-----------------------------
+  
+  |---------------------------------------------------------------
+  |0-- EXCHANGE PARAMTER   ---  START
+  |---------------------------------------------------------------
+    |---------------- EXCHANGE --------------------
+  	/if (${GlobalParam0.Equal[EXCHANGE]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax
+	
+	    |---------------------------
+		|-- If I have Alt DC, Convert it to inventory DC !
+		/if (${CurrentDCAC}>0) {
+			/call ConvertAltDC2Currency
+		} else {
+		    /echo \ar Sorry you don't have any Alternate Currency DC to do this !!!\ax
+		}
+		|---------------------------
+    }
+	|---------------- EXCHANGE --------------------
+  |---------------------------------------------------------------
+  |0-- EXCHANGE PARAMTER   ---  END
+  |---------------------------------------------------------------	
+  
+  
+  |---------------------------------------------------------------
+  |0-- ALL-AA PARAMTER   ---  START
+  |---------------------------------------------------------------
+    |---------------- ALL-AA --------------------
+  	/if (${GlobalParam0.Equal[ALL-AA]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax
+		
+        /varcalc LocalExchangeValue ${CurrentAA} * ${ConversionRate}
+
+		|---------------------
+		/if (${CurrentAA}>0) {
+			/echo --- I am exchanging (\ay${CurrentAA}\ax) unspent [\atAA\ax] for (\ay${LocalExchangeValue}\ax) Alternate Currency [\atDiamond Coin\ax].			
+			/say convert AA ${CurrentAA}			
+			/delay 10
+			/call CalculateMyAssets			
+			/echo Diamond Coin: Alternate Currency=(\at${CurrentDCAC}\ax) | Inventory=(\at${CurrentDC}\ax) | Unspent AA=(\at${CurrentAA}\ax)
+		} else {
+			/echo \ar Sorry you don't have enough unspent AA to do this !!!\ax
+		} 
+		|---------------------
+    }	
+	|---------------- ALL-AA --------------------
+  |---------------------------------------------------------------
+  |0--ALL-AA PARAMTER   ---  END
+  |---------------------------------------------------------------	
+  
+  
+  |---------------------------------------------------------------
+  |0-- ALL-DC PARAMTER   ---  START
+  |---------------------------------------------------------------
+    |---------------- ALL-DC --------------------
+  	/if (${GlobalParam0.Equal[ALL-DC]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax
+
+	    |---------------------------
+		|-- If I have DC in inventory, RECLAIM IT!
+		/if (${CurrentDC}>0) /call ReclaimAltDC
+		/call CalculateMyAssets
+		|---------------------------
+       
+		/varcalc LocalExchangeValue ${CombinedTotalDC} / ${ConversionRate}
+		
+		|---------------------
+		/if (${CombinedTotalDC}>0) {
+			/echo --- I am exchanging (\ay${CombinedTotalDC}\ax) Alternate Currency [\atDiamond Coin\ax] for (\ay${LocalExchangeValue}\ax) [\a AA\ax].
+			/say convert DC ${LocalExchangeValue}
+			/delay 10
+			/call CalculateMyAssets			
+			/echo Diamond Coin: Alternate Currency=(\at${CurrentDCAC}\ax) | Inventory=(\at${CurrentDC}\ax) | Unspent AA=(\at${CurrentAA}\ax)
+		} else {
+			/echo \ar Sorry you don't have enough Diamond Coin(s) to do this !!!\ax
+		} 
+		|---------------------
+    }	
+	|---------------- ALL-DC --------------------
+  |---------------------------------------------------------------
+  |0--ALL-DC PARAMTER   ---  END
+  |---------------------------------------------------------------	
+
+  
+  |---------------------------------------------------------------
+  |0-- DC #              ---  START
+  |---------------------------------------------------------------
+    |---------------- DC # --------------------
+  	/if (${GlobalParam0.Equal[DC]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax
+		/if (${DebugMacro}) /echo Param1 was \ar${GlobalParam1}\ax
+
+	    |---------------------------
+		|-- If I have DC in inventory, RECLAIM IT!
+		/if (${CurrentDC}>0) /call ReclaimAltDC
+		/call CalculateMyAssets
+		|---------------------------
+
+	    /varset AmmountVal ${GlobalParam1}		
+		/varcalc LocalExchangeValue ${AmmountVal} / ${ConversionRate}	
+
+		|---------------------
+		/if (${CurrentDCAC}>0) {
+			/echo --- I am exchanging (\ay${AmmountVal}\ax) [\atDiamond Coin\ax] to \ay(${LocalExchangeValue}\ax)  [\atAA\ax].	
+			/say convert DC ${AmmountVal}
+			/delay 10
+			/call CalculateMyAssets			
+			/echo Diamond Coin: Alternate Currency=(\at${CurrentDCAC}\ax) | Inventory=(\at${CurrentDC}\ax) | Unspent AA=(\at${CurrentAA}\ax)
+		} else {
+			/echo \ar Sorry you don't have enough Diamond Coin(s) to do this !!!\ax
+		} 
+		|---------------------
+    }	
+	|---------------- DC # --------------------   
+  |---------------------------------------------------------------
+  |0-- DC #              ---  END
+  |---------------------------------------------------------------
+  
+  
+  |---------------------------------------------------------------
+  |0-- AA #              ---  START
+  |---------------------------------------------------------------
+    |---------------- AA # --------------------
+  	/if (${GlobalParam0.Equal[AA]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax
+		/if (${DebugMacro}) /echo Param1 was \ar${GlobalParam1}\ax
+		
+	    /varset AmmountVal ${GlobalParam1}
+		/varcalc LocalExchangeValue ${AmmountVal} * ${ConversionRate}
+		
+		|---------------------
+		/if (${CurrentAA}>0) {
+			/echo --- I am exchanging (\ay${AmmountVal}\ax) [\atAA\ax] to \ay(${LocalExchangeValue}\ax) [\atDiamond Coin\ax].	
+			/say convert AA ${AmmountVal}
+			/delay 10
+			/call CalculateMyAssets			
+			/echo Diamond Coin: Alternate Currency=(\at${CurrentDCAC}\ax) | Inventory=(\at${CurrentDC}\ax) | Unspent AA=(\at${CurrentAA}\ax)
+		} else {
+			/echo \ar Sorry you don't have enough unspent AA to do this !!!\ax
+		} 
+		|---------------------
+    }	
+	|---------------- AA # --------------------   
+  |---------------------------------------------------------------
+  |0-- AA #              ---  END
+  |---------------------------------------------------------------
+  
+  
+  |---------------------------------------------------------------
+  |0-- GIMME PARAMTER   ---  START
+  |---------------------------------------------------------------	  
+
+  	|---------------- GIMME --------------------
+  	/if (${GlobalParam0.Equal[GIMME]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax		
+
+		/if (${Group.Member[0].CleanName.Equal[NULL]}) {
+			/echo You are not in a group !!! EXITING !!!
+			/endmacro
+		}
+		
+		/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) {
+			/echo You \arMUST\ax have either [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\atGIMME\ax] function !
+			/endmacro
+		}
+		|----------------------------------------
+		
+		|---------------------------------		
+		| --- Loop the call for DC to all group members
+		|---------------------------------		
+		/for iGroupMemberTrade 1 to ${Group.Members}
+			/varset CurrentGroupMemberTrader ${Group.Member[${iGroupMemberTrade}].CleanName}
+			
+			|-- MUST SET/RESET PAUSE ON !!!!!
+			/varset PauseUntilTradeDone 1		
+		
+			/if (${Select[${Group.Member[${iGroupMemberTrade}].Type},PC]} == 1) {
+				/echo Requesting [\atDiamond Coin\ax] from group member (\am${iGroupMemberTrade}\ax) / (\ay${Group.Member[${iGroupMemberTrade}].CleanName}\ax \ar|\ax ID:${Group.Member[${iGroupMemberTrade}].ID})				
+				
+				/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
+				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /echo /dex ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				
+				|------------------------------------------------------------------
+				| --- CALL EQBC or DANNET function to relay command to group member.
+				| PASS THE NULL FOR PARAM 1 !!!!!! OR IT WILL FAIL
+				|---- 
+				| Execute command to group member !
+				|---- 				
+				/if (${ValidCommSetup}==1 && ${ValidCommType.NotEqual[NULL]}) {
+					/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+					/if (${ValidCommType.Equal[MQ2DanNet]}) /dexecute ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				}
+				|------------------------------------------------------------------				
+
+				/echo . . . Waiting until the trade is complete !!!
+				:LoopUnTillTradeDone
+				/if (${PauseUntilTradeDone}==1) {
+					|/echo . . .
+					/delay 5
+					/goto :LoopUnTillTradeDone		
+				}				
+				|------------------------------------------------------------------					
+			}
+		|---------------------------------
+		/next iGroupMemberTrade
+		|---------------------------------		
+    }
+	|---------------- GIMME --------------------
+  
+  |---------------------------------------------------------------
+  |0-- GIMME PARAMTER   ---  END
+  |---------------------------------------------------------------	  
+
+
+  |---------------------------------------------------------------
+  |0-- TRADEMYDC PARAMTER   ---  START
+  |---------------------------------------------------------------	  
+  	|---------------- TRADEMYDC --------------------
+  	/if (${GlobalParam0.Equal[TRADEMYDC]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax
+		/if (${DebugMacro}) /echo Param2 was \ar${GlobalParam2}\ax
+		/if (${DebugMacro}) /echo Param3 was \ar${GlobalParam3}\ax
+
+		/if (${Group.Member[0].CleanName.Equal[NULL]}) {
+			/echo You are not in a group !!! EXITING !!!
+			/endmacro
+		}
+		
+		/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) {
+			/echo You \arMUST\ax have either [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\atGIMME\ax] function !
+			/endmacro
+		}
+		|----------------------------------------
+
+		| Call the actual DC TRADE.
+		/call GiveMeYourDC ${GlobalParam2} ${GlobalParam3}
+    }
+	|---------------- TRADEMYDC --------------------	
+  
+  |---------------------------------------------------------------
+  |0-- TRADEMYDC PARAMTER   ---  END
+  |---------------------------------------------------------------	 
+
+
+  |---------------------------------------------------------------
+  |0-- STICKEMUP PARAMTER   ---  START
+  |---------------------------------------------------------------	  
+
+  	|---------------- STICKEMUP --------------------
+  	/if (${GlobalParam0.Equal[STICKEMUP]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax		
+
+		/if (${Group.Member[0].CleanName.Equal[NULL]}) {
+			/echo You are not in a group !!! EXITING !!!
+			/endmacro
+		}
+		
+		/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) {
+			/echo You \arMUST\ax have either [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\STICKEMUP\ax] function !
+			/endmacro
+		}
+		|----------------------------------------
+		
+		|---------------------------------		
+		| --- Loop the call for CASH to all group members
+		|---------------------------------		
+		/for iGroupMemberTrade 1 to ${Group.Members}
+			/varset CurrentGroupMemberTrader ${Group.Member[${iGroupMemberTrade}].CleanName}
+			
+			|-- MUST SET/RESET PAUSE ON !!!!!
+			/varset PauseUntilTradeDone 1		
+		
+			/if (${Select[${Group.Member[${iGroupMemberTrade}].Type},PC]} == 1) {
+				/echo Requesting [\ag$~CASH~$\ax] from group member (\am${iGroupMemberTrade}\ax) / (\ay${Group.Member[${iGroupMemberTrade}].CleanName}\ax \ar|\ax ID:${Group.Member[${iGroupMemberTrade}].ID})				
+				/if (${DebugMacro}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				
+				/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
+				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /echo /dex ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				
+				|------------------------------------------------------------------
+				| --- CALL EQBC or DANNET function to relay command to group member.
+				| PASS THE NULL FOR PARAM 1 !!!!!! OR IT WILL FAIL
+				|---- 
+				| Execute command to group member !
+				|---- 				
+				/if (${ValidCommSetup}==1 && ${ValidCommType.NotEqual[NULL]}) {
+					/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+					/if (${ValidCommType.Equal[MQ2DanNet]}) /dexecute ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				}
+				|------------------------------------------------------------------				
+
+				/echo . . . Waiting until the trade is complete !!!
+				:LoopUnTillTradeDone
+				/if (${PauseUntilTradeDone}==1) {
+					|/echo . . .
+					/delay 5
+					/goto :LoopUnTillTradeDone		
+				}				
+				|------------------------------------------------------------------					
+			}
+		|---------------------------------
+		/next iGroupMemberTrade
+		|---------------------------------		
+    }
+	|---------------- STICKEMUP --------------------
+  
+  |---------------------------------------------------------------
+  |0-- STICKEMUP PARAMTER   ---  END
+  |---------------------------------------------------------------	
+  
+  
+  |---------------------------------------------------------------
+  |0-- TRADEMYCASH PARAMTER   ---  START
+  |---------------------------------------------------------------	  
+  	|---------------- TRADEMYCASH --------------------
+  	/if (${GlobalParam0.Equal[TRADEMYCASH]}) {
+		/if (${DebugMacro}) /echo Param0 was \ar${GlobalParam0}\ax
+		/if (${DebugMacro}) /echo Param2 was \ar${GlobalParam2}\ax
+		/if (${DebugMacro}) /echo Param3 was \ar${GlobalParam3}\ax
+
+		/if (${Group.Member[0].CleanName.Equal[NULL]}) {
+			/echo You are not in a group !!! EXITING !!!
+			/endmacro
+		}
+		
+		/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) {
+			/echo You \arMUST\ax have either [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\TRADEMYCASH\ax] function !
+			/endmacro
+		}
+		|----------------------------------------
+
+		| Call the actual CASH TRADE.
+		/call GiveMeYourCash ${GlobalParam2} ${GlobalParam3}
+    }
+	|---------------- TRADEMYCASH --------------------	
+  
+  |---------------------------------------------------------------
+  |0-- TRADEMYCASH PARAMTER   ---  END
+  |---------------------------------------------------------------	 
+
+  |-----------------------------
+  }
+  |-----------------------------
+  
+  /squelch /target clear
+  /delay 10  
+  
+  /return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: GiveMeYourDC
+|---------------------------------------------------------------------------------
+Sub GiveMeYourDC(string DCCollector, int DCCollectorID)
+
+ 	/if (${DebugMacro}) /echo DCCollector=(${DCCollector}) 
+	/if (${DebugMacro}) /echo DCCollectorID=(${DCCollectorID}) 
+	
+	|---------------------------
+	|-- If I have Alt DC, Convert it to inventory DC !
+	/if (${CurrentDCAC}>0) /call ConvertAltDC2Currency
+	|---------------------------	
+
+	|---------------------------
+	| If I have DC to Trade !!!!
+	|---------------------------
+	|---------------------------------
+	/if (${CurrentDC}>0) {
+	    /if (${DebugMacro}) /echo \ar***\ax FOUND [\atDiamond Coin\ax] in Pack(\at${PackSlot}\ax) Slot(\at${ItemSlot}\ax).
+		 		
+		/if (${DCCollector.NotEqual[NULL]} && !${Target.ID}) {
+			/echo Targetting (${DCCollector}) for [\atDiamond Coin\ax] trade.
+			:GetDCTarget
+			/squelch /target ${DCCollector}
+			/delay 3s ${Target.ID}==${DCCollectorID}
+			/if (${Target.ID}!=${DCCollectorID}) /goto :GetDCTarget
+		}
+	  	 
+		| --- Group Member Check
+		/if ( ${SpawnCount[group ${DCCollector}]}==1 ) {
+	      /echo (${DCCollector}) is a valid group member.	  
+		} else {
+	      /echo (${DCCollector}) is \arNOT\ax a valid group member.
+		  /echo Ending macro !
+		  /end
+		}
+		
+		/call CheckPlugin MQ2Nav
+
+		| --- Group Member Distance Check	  
+		/if (${Target.ID}==${DCCollectorID} && ${Target.Distance}>15) {
+			/echo Moving to (${DCCollector}) for [\atDiamond Coin\ax] trade.
+			/nav target
+			:Nav2DCCollector
+			/echo . . .
+			/delay 5 ${Target.Distance}<=15
+			/if (${Target.Distance}>15) /goto :Nav2DCCollector
+		} 		
+		
+		/if (${DebugMacro}) /echo Looking / Facing (${DCCollector}).
+		/face fast
+		/look 0
+		/delay 10
+
+		|--------------------------------------------------------
+		| GRAB THE DC
+		|--------------------------------------------------------
+		
+		:GetMoreDC
+		|---------------------------------------------------------------------
+		/varset PackSlot ${FindItem[=Diamond Coin].ItemSlot} 
+		/varset ItemSlot ${FindItem[=Diamond Coin].ItemSlot2} 
+ 
+		/varcalc PackSlot (${PackSlot}) - 22
+		/varcalc ItemSlot (${ItemSlot}) + 1 
+	
+		/if (${DebugMacro}) /echo PackSlot=(${PackSlot}) 
+		/if (${DebugMacro}) /echo ItemSlot=(${ItemSlot})
+		|---------------------------------------------------------------------
+		
+		/if (${DebugMacro}) /echo Grabbing my [\atDiamond Coin(s)\ax].
+		/if (${DebugMacro}) /echo /nomodkey /shift /itemnotify in pack${PackSlot} ${ItemSlot} leftmouseup
+		/nomodkey /shift /itemnotify in pack${PackSlot} ${ItemSlot} leftmouseup
+		/delay 2s ${Cursor.ID}
+		/if (${DebugMacro} && ${Cursor.ID}) /echo (Cursor.ID)=(${Cursor.ID})
+		
+		/if (!${Cursor.ID}) /goto :GetMoreDC
+		|--------------------------------------------------------
+					
+		|--------------------------------------------------------
+		| Time to Trade !!!
+		/if (${Cursor.ID}==${FindItem[=Diamond Coin].ID}) {
+			/echo --- I have (${CurrentDC}) [\atDiamond Coin(s)\ax] on Cursor to trade to (\ay${DCCollector}}\ax) !!!
+			/click left target
+			/delay 5
+
+			|-----------------------
+			| Chck for more stacks !
+			|-----------------------
+			; Update the DC and Alternate DC Currency ammount.
+			/call CalculateMyAssets
+	
+			|--------------------------------
+			| --- Check for MORE stacks !
+			/if (${CurrentDC}>0) {
+				/if (${DebugMacro}) /echo I still have more [\atDiamond Coin\ax] to trade (${CurrentDC})
+				/if (${DebugMacro}) /echo \ar***\ax FOUND [\atDiamond Coin\ax] in Pack(\at${PackSlot}\ax) Slot(\at${ItemSlot}\ax).
+				
+				/goto :GetMoreDC
+			}
+			|--------------------------------
+
+			/delay 2s ${Window[TradeWnd].Open} 
+			/if (${Window[TradeWnd].Open} && !${Cursor.ID}) /notify TradeWnd TRDW_Trade_Button leftmouseup
+		}	
+		|--------------------------------------------------------
+		
+		
+		|--------------------------------------------------------
+		| Wait for the trade to be completed by DCCollector
+		/if (${Window[TradeWnd].Open}) {
+		:WaitingOnDCTradeFinish
+		    /delay 5
+			/if (${Window[TradeWnd].Open}) /goto :WaitingOnDCTradeFinish		
+		}
+		|--------------------------------------------------------
+		
+		/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
+		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${DCCollector} //varset PauseUntilTradeDone 0
+		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /echo /dex ${DCCollector} /varset PauseUntilTradeDone 0
+				
+		/if (!${Window[TradeWnd].Open} && !${Cursor.ID}) {
+			/echo Trade Completed !!!!
+			| Give DCCollector command to move on to next group member.
+			/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //varset PauseUntilTradeDone 0
+			/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /varset PauseUntilTradeDone 0
+		}
+		
+		
+	} else {
+		/echo \ar Sorry you don't any Diamond Coin(s) to trade right now !!!\ax
+		/g Sorry I don't have any Diamond Coin(s) to trade right now !!!
+		
+		| Give DCCollector command to move on to next group member.
+		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //varset PauseUntilTradeDone 0
+		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /varset PauseUntilTradeDone 0
+		
+	}
+	|---------------------------------
+
+  /return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: GiveMeYourCash
+|---------------------------------------------------------------------------------
+Sub GiveMeYourCash(string CASHCollector, int CASHCollectorID)
+
+ 	/if (${DebugMacro}) /echo CASHCollector=(${CASHCollector}) 
+	/if (${DebugMacro}) /echo CASHCollectorID=(${CASHCollectorID}) 
+	
+	/if (${CASHCollector.NotEqual[NULL]} && !${Target.ID}) {
+		/echo Targetting (${CASHCollector}) for [\agCASH\ax] trade.
+		:GetCashTarget
+		/squelch /target ${CASHCollector}
+		/delay 3s ${Target.ID}==${CASHCollectorID}
+		/if (${Target.ID}!=${CASHCollectorID}) /goto :GetCashTarget
+	}
+	  	 
+	| --- Group Member Check
+	/if ( ${SpawnCount[group ${CASHCollector}]}==1 ) {
+	     /echo (${CASHCollector}) is a valid group member.	  
+	} else {
+	     /echo (${CASHCollector}) is \arNOT\ax a valid group member.
+	  /echo Ending macro !
+	  /end
+	}
+		
+	/call CheckPlugin MQ2Nav
+
+	| --- Group Member Distance Check	  
+	/if (${Target.ID}==${CASHCollectorID} && ${Target.Distance}>15) {
+		/echo Moving to (${CASHCollector}) for [\agCASH\ax] trade.
+		/nav target
+		:Nav2CashCollector
+		/echo . . .
+		/delay 5 ${Target.Distance}<=15
+		/if (${Target.Distance}>15) /goto :Nav2CashCollector
+	} 		
+		
+	/if (${DebugMacro}) /echo Looking / Facing (${CASHCollector}).
+	/face fast
+	/look 0
+	/delay 10
+	
+	|--- DO THE TRADE
+	
+	|---------------------------------------------------------------------
+	|--- PLAT  ---    /shift /notify InventoryWindow IW_Money0 leftmouseup
+	|--- GOLD  ---    /shift /notify InventoryWindow IW_Money1 leftmouseup
+	|--- SILV  ---    /shift /notify InventoryWindow IW_Money2 leftmouseup
+	|--- COPP  ---    /shift /notify InventoryWindow IW_Money3 leftmouseup
+	|---------------------------------------------------------------------
+	
+	/if (${DebugMacro}) /echo PLAT:(\ar${Me.Platinum}\ax) --- GOLD:(\ay${Me.Gold}\ax) --- SILVER:(\aw${Me.Silver}\ax) --- COPPER:(\ap${Me.Copper}\ax)
+	
+	; Open the Inventory Window if it is closed
+	|----------------------------------------------
+	/if (!${Window[InventoryWindow].Open}) /call OpenInvWindow
+	|----------------------------------------------	
+	
+	/delay 5s ${Window[InventoryWindow].Open}
+	
+	|I GOt Nothing To Give !!!
+	/if (${Me.Platinum}==0 && (${Me.Gold}==0) && (${Me.Silver}==0) && (${Me.Copper}==0)) {
+		/goto :NoCashToTrade
+	}
+	
+    /if (${Me.Platinum}>0) {
+      /shift /notify InventoryWindow IW_Money0 leftmouseup
+      /delay 7
+	  /click left target
+	  /delay 7
+    }
+	
+    /if (${Me.Gold}>0) {
+      /shift /notify InventoryWindow IW_Money1 leftmouseup
+      /delay 7
+	  /click left target
+	  /delay 7
+    }
+
+    /if (${Me.Silver}>0) {
+      /shift /notify InventoryWindow IW_Money2 leftmouseup
+      /delay 7
+	  /click left target
+	  /delay 7
+    }
+
+    /if (${Me.Copper}>0) {
+      /shift /notify InventoryWindow IW_Money3 leftmouseup
+      /delay 7
+	  /click left target
+	  /delay 7
+    }
+		
+	/delay 2s ${Window[TradeWnd].Open} 
+	
+	/if (${Window[TradeWnd].Open} && !${Cursor.ID}) /notify TradeWnd TRDW_Trade_Button leftmouseup
+		
+	|--------------------------------------------------------
+	| Wait for the trade to be completed by DCCollector
+	/if (${Window[TradeWnd].Open}) {
+	:WaitingOnCashTradeFinish
+	    /delay 5
+		/if (${Window[TradeWnd].Open}) /goto :WaitingOnCashTradeFinish		
+	}
+	|--------------------------------------------------------
+	
+	:NoCashToTrade
+	
+		/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
+		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${CASHCollector} //varset PauseUntilTradeDone 0
+		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /varset PauseUntilTradeDone 0
+	
+	/if (!${Window[TradeWnd].Open} && !${Cursor.ID}) {
+		/echo Trade Completed !!!!
+		| Give CASHCollector command to move on to next group member.
+		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //varset PauseUntilTradeDone 0
+		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /varset PauseUntilTradeDone 0
+	}
+	|---------------------------------
+
+	; Close the Inventory Window if it is open
+	|----------------------------------------------
+	/if (${Window[InventoryWindow].Open}) /call CloseInvWindow
+	|----------------------------------------------		
+
+  /return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: ConvertAltDC2Currency
+|---------------------------------------------------------------------------------
+Sub ConvertAltDC2Currency
+
+    ; --- If I have ALT DC, convert it to Inventory DC !!!   
+	/echo Diamond Coin: Alternate Currency=(\at${CurrentDCAC}\ax) | Inventory=(\at${CurrentDC}\ax)
+	/echo \ag$$$\ax I have Currency to convert !   
+		
+	; Open the Inventory Window if it is closed
+	|----------------------------------------------
+	/if (!${Window[InventoryWindow].Open}) /call OpenInvWindow
+	|----------------------------------------------	
+	
+	; Select Alt Currency Tab
+	/if (${DebugMacro}) /echo Selecting Alt Currency Tab
+	/if (!${Window[InventoryWindow].Child[IW_AltCurrPage].Open})  /notify InventoryWindow IW_Subwindows tabselect 5
+	/delay 5
+	
+	; Select Diamond Coin off the Alternate Currecy tab in Inventory window ..  YOU NEED TO OPEN INVENTORY WINDOW FOR THIS ! 
+	/if (${DebugMacro}) /echo Selecting Diamond Coins
+	/notify InventoryWindow IW_AltCurr_PointList listselect 2
+	/delay 5
+	
+	:CreateCurrentDC
+	; Click the CREATE BUTTON after selecting Diamond Coin previously
+	/if (${DebugMacro}) /echo Clicking CREATE
+	/nomodkey /notify InventoryWindow AltCurr_CreateItemButton LeftMouseUp
+	/delay 5
+	
+	; Click the ACCEPT BUTTON In the QUANTITY window
+	/if (${DebugMacro}) /echo Clicking ACCEPT
+	/nomodkey /notify QuantityWnd QTYW_Accept_Button LeftMouseUp
+	/delay 5
+	
+	; If DC on Cursor, AutoInv
+    /if (${Cursor.ID}) {
+		/if (${DebugMacro}) /echo Diamond Coin on cursor, AUTOINVENTORY !
+		:AutoInventoryDC
+        /autoinventory
+        /delay 5
+		/if (${Cursor.ID}) /goto AutoInventoryDC
+      }	  
+		
+	; Update the DC and Alternate DC Currency ammount.
+	/call CalculateMyAssets
+	
+	|--------------------------------
+	| --- Check for MORE stacks !
+	/if (${CurrentDCAC}>0) {
+		/if (${DebugMacro}) /echo I still have more [\atDiamond Coin\ax] to exchange (${CurrentDCAC})
+		/goto :CreateCurrentDC
+	}
+	|--------------------------------
+
+	/echo Diamond Coin: Alternate Currency=(\at${CurrentDCAC}\ax) | Inventory=(\at${CurrentDC}\ax)
+
+	; Close the Inventory Window if it is open
+	|----------------------------------------------
+	/if (${Window[InventoryWindow].Open}) /call CloseInvWindow
+	|----------------------------------------------	
+
+	/if (${CurrentDCAC}==0) /echo \ag$$$\ax \arALL\ax Alternate Currency [\atDiamond Coin\ax] was converted to inventory currency ! 	
+
+  /return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: ReclaimAltDC
+|---------------------------------------------------------------------------------
+Sub ReclaimAltDC
+
+    ; --- If I have DC in inventory, RECLAIM it to Alternate Currency !!!   
+	/echo Diamond Coin: Alternate Currency=(\at${CurrentDCAC}\ax) | Inventory=(\at${CurrentDC}\ax)
+	/echo \ag$$$\ax I have DC to reclaim! 
+	
+	; Open the Inventory Window if it is closed
+	|----------------------------------------------
+	/if (!${Window[InventoryWindow].Open}) /call OpenInvWindow
+	|----------------------------------------------	
+	
+	; Select Alt Currency Tab
+	/if (${DebugMacro}) /echo Selecting Alt Currency Tab
+	/if (!${Window[InventoryWindow].Child[IW_AltCurrPage].Open})  /notify InventoryWindow IW_Subwindows tabselect 5
+	/delay 5
+	
+	; Select Diamond Coin off the Alternate Currecy tab in Inventory window ..  YOU NEED TO OPEN INVENTORY WINDOW FOR THIS ! 
+	/if (${DebugMacro}) /echo Selecting Diamond Coins
+	/notify InventoryWindow IW_AltCurr_PointList listselect 2
+	/delay 5
+
+	; Click the RECLAIM BUTTON after selecting Diamond Coin previously
+	/nomodkey /notify InventoryWindow AltCurr_ReclaimButton LeftMouseUp
+	/delay 5
+		
+	; Update the DC and Alternate DC Currency ammount.
+	/call CalculateMyAssets
+
+	; Close the Inventory Window if it is open
+	|----------------------------------------------
+	/if (${Window[InventoryWindow].Open}) /call CloseInvWindow
+	|----------------------------------------------	
+
+	/if (${CurrentDC}==0) /echo \ag$$$\ax All DC was converted to Alternate Currency !
+
+/return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: CalculateMyAssets
+|---------------------------------------------------------------------------------
+  Sub CalculateMyAssets
+  
+  /varset CurrentAA ${Me.AAPoints}
+  /varset CurrentDC ${FindItemCount[=Diamond Coin]}
+  /varset CurrentDCAC ${Me.AltCurrency[20]}  
+  
+  /varcalc CombinedTotalDC (${CurrentDC}) + (${CurrentDCAC}) 
+  /varcalc GlobalAAExchangeValue (${CurrentAA}) * (${ConversionRate}) 
+  /varcalc GlobalDCExchangeValue (${CombinedTotalDC}) / (${ConversionRate}) 
+    
+  /return
+|---------------------------------------------------------------------------------
+
+|---------------------------------------------------------------------------------
+| SUB: ShowMyAssets
+|---------------------------------------------------------------------------------
+  sub ShowMyAssets
+
+	   /echo |------------------------------------------------------
+       /echo I currently have: (\ay${CurrentAA}\ax) unspent [\atAA\ax].
+	   /echo I currently have: (\ay${CurrentDC}\ax) inventory [\atDiamond Coin\ax].
+	   /echo I currently have: (\ay${CurrentDCAC}\ax) Alternate Currency [\atDiamond Coin\ax].
+	   /echo I currently have: (\ay${CombinedTotalDC}\ax) \amTOTAL COMBINED\ax [\atDiamond Coin\ax].
+	   /echo \ag$$$\ax I can currently convert: ---> (\ay${CurrentAA}\ax) unspent [\atAA\ax] to (\ay${GlobalAAExchangeValue}\ax) Alternate Currency [\atDiamond Coin\ax] \ag$$$\ax
+	   /echo \ag$$$\ax I can currently convert: ---> (\ay${CombinedTotalDC}\ax) \amTOTAL\ax [\atDiamond Coin\ax] to (\ay${GlobalDCExchangeValue}\ax) unspent [\atAA\ax] \ag$$$\ax	   
+	   /echo \ag--->\ax Current selling price is: $(\ag${MyDCSellPrice}\ax) platinum per [\atDiamond Coin\ax] \ag<---\ax
+	   /echo |------------------------------------------------------
+	
+  /return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: DisplaySyntax
+|---------------------------------------------------------------------------------
+Sub DisplaySyntax
+
+/echo |------------------------------------------------------
+/echo Syntax: /macro DCCONV \amParam0\ax \amParam1\ax
+/echo Where: (\amParam0\ax = \agAA\ax or \agDC\ax or \agALL-AA\ax or \agALL-DC\ax or \agEXCHANGE \ax or \agGIMME\ax) 
+/echo ---- and (\amParam1\ax = # to convert)
+/echo |------------------------------------------------------
+/echo Example: /macro DCCONV \amAA\ax \ay10\ax: Converts \ay10\ax AA to \ay30\ax DC.
+/echo Example: /macro DCCONV \amDC\ax \ay9\ax: Converts \ay9\ax DC to \ay3\ax AA.
+/echo Example: /macro DCCONV \amALL-AA\ax: Converts \arALL UNSPENT AA\ax to [\atAlt Currency Diamond Coin\ax].
+/echo Example: /macro DCCONV \amALL-DC\ax: Converts \arALL COMBINED DC\ax to [\atAA\ax].
+/echo Example: /macro DCCONV \amEXCHANGE\ax: Exchanges \arALL\ax [\atAlt Currency Diamond Coin\ax] ---> [\atDiamond Coin\ax].
+/echo Example: /macro DCCONV \amGIMME\ax: Makes \arALL\ax group memebers give you \arALL\ax their inventory [\atDiamond Coin\ax].
+/echo Example: /macro DCCONV \amSTICKEMUP\ax: Makes \arALL\ax group memebers give you \arALL\ax their [\agCASH\ax].
+/echo ---- Use GIMME / STICKEMUP option(s) only on ONE (1) CHARACTER --- NEVER have the group run with that option !
+/call ShowMyAssets
+/end
+
+  /return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: CHeckZoneParameters
+|---------------------------------------------------------------------------------
+  Sub CheckZoneParameters
+ 
+  /if (${Zone.ShortName.Equal[freeporttemple]} || ${Zone.ShortName.Equal[poknowledge]}) {
+	  /if (${Zone.ShortName.Equal[freeporttemple]}) {
+		  /varset ZoneConvNPC Hoodah
+		  /varset ZoneConvNPCID ${Spawn[=Hoodah].ID} 
+	  }
+	
+	  /if (${Zone.ShortName.Equal[poknowledge]}) {
+	  	  /varset ZoneConvNPC Amphrtxi
+		  /varset ZoneConvNPCID ${Spawn[=Amphrtxi].ID} 
+	  }
+
+  	  /echo Current zone is: (\at${Zone.Name}\ax)
+  	  /echo Correct conversion NPC is: (\at${ZoneConvNPC}\ax) 
+   
+  	  /if (${ZoneConvNPC.NotEqual[NULL]} && !${Target.ID}) {
+			/echo Targetting Conversion NPC (\at${ZoneConvNPC}\ax).
+			:GetTarget
+			/squelch /target ${ZoneConvNPC}
+			/delay 5
+	  }
+	  
+	  /call CheckPlugin MQ2Nav
+	  
+	  /if (${Target.ID}==${ZoneConvNPCID} && ${Target.Distance}>15) {
+		/echo Moving to Conversion NPC (\at${ZoneConvNPC}\ax).
+		/nav target
+		:Nav2Target
+		/echo . . .
+		/delay 5 ${Target.Distance}<=15
+		/if (${Target.Distance}>15) /goto :Nav2Target
+	  } 
+   
+  	  ; face target
+  	  /face fast
+	  /look 0
+  	  /delay 10	  
+  } else {
+	 /echo You MUST be in "The plane of Knowledge" or "Marr's Temple" !!!!!!
+	 /endmacro
+  }
+  
+  /return
+|---------------------------------------------------------------------------------
+
+
+|---------------------------------------------------------------------------------
+| SUB: Open Inventory Window
+|---------------------------------------------------------------------------------
+  Sub OpenInvWindow
+
+	/if (!${Window[InventoryWindow].Open}) {
+	:OpenInventoryWindow
+		/nomodkey /keypress inventory
+		/delay 5
+		/if (${Window[InventoryWindow].Open}) /echo Inventory Window (Open).
+		/if (!${Window[InventoryWindow].Open}) /goto :OpenInventoryWindow
+	}
+
+  /return
+|---------------------------------------------------------------------------------		
+
+
+|---------------------------------------------------------------------------------
+| SUB: Close Inventory Window
+|---------------------------------------------------------------------------------
+  Sub CloseInvWindow
+
+	/if (${Window[InventoryWindow].Open}) {
+	:CloseInventoryWindow
+		/nomodkey /keypress inventory
+		/delay 5
+		/if (!${Window[InventoryWindow].Open}) /echo Inventory Window (Closed).
+		/if (${Window[InventoryWindow].Open}) /goto :CloseInventoryWindow
+	}
+
+  /return
+|---------------------------------------------------------------------------------	
+
+|---------------------------------------------------------------------------------
+| SUB: CheckPluginComm
+|---------------------------------------------------------------------------------
+  Sub CheckPluginComm(string pluginname)
+
+  |---------------------------------------
+  /if (!${Bool[${Plugin[${pluginname}]}]}) {
+    /echo \ag${pluginname}\ax \arNOT\ax detected! This macro requires it! Loading ...
+	/squelch /plugin ${pluginname}	
+		|---------------------------------------
+		/if (${Bool[${Plugin[${pluginname}]}]}) {
+			/echo \ag${pluginname}\ax \atNOW\ax detected !
+			/if (${Bool[${Plugin[${pluginname}]}]} && ${pluginname.Equal[MQ2EQBC]}) /bccmd connect
+			/varset ValidCommSetup 1
+			/varset ValidCommType ${pluginname}
+		} else {
+			/echo \ag${pluginname}\ax detected!
+			/varset ValidCommSetup 0
+			/varset ValidCommType NULL		
+		}
+		|---------------------------------------		
+  } else {
+			/echo \ag${pluginname}\ax detected!
+			/if (${Bool[${Plugin[${pluginname}]}]} && ${pluginname.Equal[MQ2EQBC]}) /bccmd connect 
+			/varset ValidCommSetup 1
+			/varset ValidCommType ${pluginname}
+  }
+  |---------------------------------------
+  
+  |---------------------------------------
+  |--- Reconnect if EQBC
+  /if (${Bool[${Plugin[${pluginname}]}]} && ${pluginname.Equal[MQ2EQBC]}) /bccmd connect 
+  |---------------------------------------
+    
+  /if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
+
+  /return
+|---------------------------------------------------------------------------------
+
+| ----------------------------------------------------------------------------
+| SUB: Check Plugin
+| ----------------------------------------------------------------------------
+  Sub CheckPlugin(string pluginname)
+	
+  /if (!${Bool[${Plugin[${pluginname}]}]}) {
+    /echo \ag${pluginname}\ax \arNOT\ax detected! This macro requires it! Loading ...
+	/squelch /plugin ${pluginname}
+		/if (!${Bool[${Plugin[${pluginname}]}]}) {
+			/echo \ag${pluginname}\ax \arSTILL NOT\ax detected! This macro requires it! EXITING ...
+			/endmacro
+		} else {
+		    /echo \ag${pluginname}\ax \atNOW\ax detected !
+		}
+  }
+		
+    /return
+| ----------------------------------------------------------------------------
+
+	
