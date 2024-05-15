@@ -22,6 +22,5 @@ Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
 -------------------------------------------------------------------
 
 NOTE: NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS... 
-            
-ONLY SELF /MACRO COMMANDS !
+ONLY AS SELF /MACRO COMMANDS !
 -------------------------------------------------------------------
