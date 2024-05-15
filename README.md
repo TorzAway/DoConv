@@ -20,6 +20,5 @@ Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
 4) Collect ALL the group's coin [Platinum | Gold | Silver | Copper] (SINGLE COMMAND): 
       /macro DoCOnv STICKEMUP
 -------------------------------------------------------------------
-NOTE: NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS... 
-ONLY AS SELF /MACRO COMMANDS !
+NOTE: NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS !
 -------------------------------------------------------------------
