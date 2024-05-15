@@ -7,12 +7,16 @@ This utility will automate key features on Project Lazarus (EverQuest EMU) serve
 
 Run this in Plane of Knowledge of Temple of Marr:
 
-Setup (4) separate EQ Social Hotkeys, one for easch of the following functions:
-(We will assume your using natice E3BC in the E3 mono package for group communiucation)
+Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
+(We will assume your using native E3BC in the E3 mono package for group communiucation)
 
-1) Convert Group AA to DC: /e3bcaa /macro DoConv ALL-AA
-2) Convert Group DC to AA: /e3bcaa /macro DoConv ALL-DC
-3) Collect ALL the group's [Diamond Coin]: /macro DoCOnv GIMME
-4) Collect ALL the group's coin [Platinum | Gold | Silver | Copper]: /macro DoCOnv STICKEMUP
+1) Convert Group AA to DC (GROUP COMMAND): 
+      /e3bcaa /macro DoConv ALL-AA
+2) Convert Group DC to AA (GROUP COMMAND): 
+      /e3bcaa /macro DoConv ALL-DC
+3) Collect ALL the group's [Diamond Coin] (SINGLE COMMAND): 
+      /macro DoCOnv GIMME
+4) Collect ALL the group's coin [Platinum | Gold | Silver | Copper] (SINGLE COMMAND): 
+      /macro DoCOnv STICKEMUP
 
    NOTE: NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS... ONLY SELF /MACRO COMMANDS !
