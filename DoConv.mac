@@ -13,7 +13,7 @@
 |				Example: /macro DCCONV \amALL-DC\ax: Converts \arALL COMBINED DC\ax to AA.
 |				Example: /macro DCCONV \amEXCHANGE\ax: Exchanges \arALL\ax Alt Currency [\atDiamond Coin\ax] ---> [\atDiamond Coin\ax].
 |				Example: /macro DCCONV \amGIMME\ax: Makes \arALL\ax group memebers give you \arALL\ax their stacked [\atDiamond Coin\ax].
-|               Example: /macro DCCONV \amSTICKEMUP\ax: Makes \arALL\ax group memebers give you \arALL\ax their [\agCASH\ax].
+|               		Example: /macro DCCONV \amSTICKEMUP\ax: Makes \arALL\ax group memebers give you \arALL\ax their [\agCASH\ax].
 |                        ---- Use GIMME / STICKEMUP option(s) only on ONE (1) CHARACTER --- NEVER have the group run with that option !
 |
 |--------------------------------------------------------------------------------
