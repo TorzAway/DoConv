@@ -9,7 +9,6 @@ This utility will automate key features on Project Lazarus (EverQuest EMU) serve
 Run this in Plane of Knowledge of Temple of Marr:
 -------------------------------------------------------------------
 Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
-
 (We will assume your using native E3BC in the E3 mono package for group communiucation)
 -------------------------------------------------------------------
 1) Convert Group AA to DC (GROUP COMMAND): 
