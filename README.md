@@ -12,9 +12,9 @@ Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
 (We will assume your using native E3BC in the E3 mono package for group communiucation)
 -------------------------------------------------------------------
 1) Convert Group AA to DC (GROUP COMMAND): 
-      /e3bcaa /macro DoConv ALL-AA
+      /e3bcga /macro DoConv ALL-AA
 2) Convert Group DC to AA (GROUP COMMAND): 
-      /e3bcaa /macro DoConv ALL-DC
+      /e3bcga /macro DoConv ALL-DC
 3) Collect ALL the group's [Diamond Coin] (SINGLE COMMAND): 
       /macro DoCOnv GIMME
 4) Collect ALL the group's coin [Platinum | Gold | Silver | Copper] (SINGLE COMMAND): 
