@@ -2,7 +2,7 @@
 |
 | DC to AA / Vice versa
 | DCCONV.mac
-| Author      : TreeHuginDruid
+| Author      : Kroaking
 | Version     : 2.9
 | Syntax      : Syntax: /macro DCCONV \amParam0\ax \amParam1\ax
 |				Where: (\amParam0\ax = \agDC\ax or \agAA\ax  or \agCONVERT\ax or \agGIMME\ax) and (\amParam1\ax = # to convert or ALL)
