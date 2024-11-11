@@ -88,15 +88,12 @@
 	  /if (!${Defined[GlobalParam1]} || (${GlobalParam1}==0)) /call DisplaySyntax
   }
   
-  
   |-----------------------------  
   | --- SET COMM TYPE ( PICK ONE !!!!! )
   |-----------------------------
-  
   /if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2DanNet
   |/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2EQBC
   |-----------------------------  
-  
   
   |-----------------------------
   | Dont bother checking zone or naving to ZoneConvNPC
