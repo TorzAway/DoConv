@@ -21,5 +21,6 @@ Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
       /macro DoConv STICKEMUP
 -------------------------------------------------------------------
 NOTE: 
+
 NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS !
 -------------------------------------------------------------------
