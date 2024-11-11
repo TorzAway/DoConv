@@ -16,9 +16,9 @@ Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
 2) Convert Group DC to AA (GROUP COMMAND): 
       /e3bcga /macro DoConv ALL-DC
 3) Collect ALL the group's [Diamond Coin] (SINGLE COMMAND): 
-      /macro DoCOnv GIMME
+      /macro DoConv GIMME
 4) Collect ALL the group's coin [Platinum | Gold | Silver | Copper] (SINGLE COMMAND): 
-      /macro DoCOnv STICKEMUP
+      /macro DoConv STICKEMUP
 -------------------------------------------------------------------
 NOTE: NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS !
 -------------------------------------------------------------------
