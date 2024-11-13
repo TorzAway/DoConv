@@ -27,9 +27,9 @@ NOTE:
 The macro relies on having MQ2AutoAccept plugin setup for free trade with your own group members.
 -------------------------------------------------------------------
 NOTE: 
-If your trying to setup the buttons for GIMME DC and GIMME $$$ in boxhud:
+If your trying to setup the buttons for GIMME DC and GIMME $$$ in boxhud
 You need to issue the command to the toon via boxhud's toons name variable ... the button example would be:
-
+-------------------------------------------------------------------
 Conv AA = /e3bcga /macro DoConv ALL-AA
 
 Conv DC = /e3bcga /macro DoConv ALL-DC
@@ -37,4 +37,5 @@ Conv DC = /e3bcga /macro DoConv ALL-DC
 Gimme $$$ = /dex #botName# /macro DoConv STICKEMUP
 
 Gimme DC = /dex #botName# /macro DoConv GIMME 
+
 -------------------------------------------------------------------
