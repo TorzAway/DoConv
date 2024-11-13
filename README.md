@@ -21,30 +21,12 @@ Setup (4) separate EQ Social Hotkeys, one for each of the following functions:
       /macro DoConv STICKEMUP
 -------------------------------------------------------------------
 NOTE: 
-
 NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS !
 -------------------------------------------------------------------
+NOTE: 
 The macro relies on having MQ2AutoAccept plugin setup for free trade with your own group members.
-config\Mq2AutoAccept.ini
-
-[ToonName1_Settings]
-Enabled=1
-Translocate=0
-Anchor=0
-SelfAnchor=0
-Trade=1
-TradeAlways=0
-TradeReject=0
-Group=1
-Fellowship=1
-Raid=1
-
-[ToonName1_Names]
-ToonName2=1
-ToonName3=1
-ToonName4=1
-ToonName5=1 
 -------------------------------------------------------------------
+NOTE: 
 If your trying to setup the buttons for GIMME DC and GIMME $$$ in boxhud:
 You need to issue the command to the toon via boxhud's toons name variable ... the button example would be:
 
