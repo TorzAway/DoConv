@@ -39,4 +39,4 @@ Gimme $$$ = /dex #botName# /macro DoConv STICKEMUP
 Gimme DC = /dex #botName# /macro DoConv GIMME 
 
 -------------------------------------------------------------------
-https://github.com/TorzAway/DoConv/blob/main/image_2024-11-13_153514090.png
+![image](https://github.com/TorzAway/DoConv/blob/main/image_2024-11-13_153514090.png)
