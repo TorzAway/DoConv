@@ -25,6 +25,7 @@ NEVER ISSUE THE COLLECTION COMMANDS AS GROUP COMMANDS !
 -------------------------------------------------------------------
 NOTE: 
 The macro relies on having MQ2AutoAccept plugin setup for free trade with your own group members.
+(IF YOU DONT HAVE MQ2AutoAccept RUNNING AND CONFIGURED TO TRADE WITH GROUP MEMBERS THE MACRO WILL STALL)
 -------------------------------------------------------------------
 NOTE: 
 If your trying to setup the buttons for GIMME DC and GIMME $$$ in boxhud
