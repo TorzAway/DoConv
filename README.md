@@ -3,8 +3,8 @@ This utility will automate key features on Project Lazarus (EverQuest EMU) serve
 -------------------------------------------------------------------
 1) Automate the conversion of all your group's AA [Alternaet Advancement] to DC [Diamond Coin]
 2) Automate the conversion of all your group's DC [Diamond Coin] to AA [Alternaet Advancement]
-3) Collect all your group's [Diamond Coin] (issuesd from one character who MUST be in group).
-4) Collect all your group's coin [Platinum | Gold | Silver | Copper] (issuesd from one character who MUST be in group).
+3) Collect all your group's [Diamond Coin] (issued from one character who MUST be in group).
+4) Collect all your group's coin [Platinum | Gold | Silver | Copper] (issued from one character who MUST be in group).
 -------------------------------------------------------------------
 Run this in Plane of Knowledge of Temple of Marr:
 -------------------------------------------------------------------
