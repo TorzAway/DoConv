@@ -25,7 +25,7 @@
   Sub Main
 
 |------------------------------------------------------------------------- 
-  /declare MacroVersion				string	outer 	2.9
+  /declare MacroVersion				string	outer 	3.0
   
   /declare CurrentGroupMemberTrader	string	outer	NULL
   /declare CurrentZone				string	outer 	${Zone.Name}
@@ -64,8 +64,19 @@
   /declare DebugMacro				bool	outer	FALSE
 |-------------------------------------------------------------------------
 
-  | Clear targets for routines.
-  /squelch /target clear
+  |------------------------------------
+  |-- Clear targets and stop following.
+  |------------------------------------
+  /squelch /e3bcgza /multiline ; /afollow off ; /followoff
+  /squelch /e3bcgza /target clear
+  /delay 1s !${Target.ID}
+  |------------------------------------
+  |--MESH LOAD
+  /if (!${Navigation.MeshLoaded}) {		
+		/nav reload
+		/delay 2s
+  }
+  |------------------------------------
   
   /echo |-------------------------------------------------------------|
   /echo \ar***\ax Macro: (\ag${Macro.Name}\ax) Version: (\ag${MacroVersion}\ax) \ar***\ax
@@ -906,44 +917,42 @@ Sub DisplaySyntax
   Sub CheckZoneParameters
  
   /if (${Zone.ShortName.Equal[freeporttemple]} || ${Zone.ShortName.Equal[poknowledge]}) {
-	  /if (${Zone.ShortName.Equal[freeporttemple]}) {
-		  /varset ZoneConvNPC Hoodah
-		  /varset ZoneConvNPCID ${Spawn[=Hoodah].ID} 
-	  }
+		/if (${Zone.ShortName.Equal[freeporttemple]}) {
+			/varset ZoneConvNPC Hoodah
+			/varset ZoneConvNPCID ${Spawn[=Hoodah].ID} 
+		}
 	
-	  /if (${Zone.ShortName.Equal[poknowledge]}) {
-	  	  /varset ZoneConvNPC Amphrtxi
-		  /varset ZoneConvNPCID ${Spawn[=Amphrtxi].ID} 
-	  }
+		/if (${Zone.ShortName.Equal[poknowledge]}) {
+			/varset ZoneConvNPC Amphrtxi
+			/varset ZoneConvNPCID ${Spawn[=Amphrtxi].ID} 
+		}
 
-  	  /echo Current zone is: (\at${Zone.Name}\ax)
-  	  /echo Correct conversion NPC is: (\at${ZoneConvNPC}\ax) 
+		/echo Current zone is: (\at${Zone.Name}\ax)
+		/echo Correct conversion NPC is: (\at${ZoneConvNPC}\ax) 
    
-  	  /if (${ZoneConvNPC.NotEqual[NULL]} && !${Target.ID}) {
+		/if (${ZoneConvNPC.NotEqual[NULL]} && !${Target.ID}) {
 			/echo Targetting Conversion NPC (\at${ZoneConvNPC}\ax).
 			:GetTarget
 			/squelch /target ${ZoneConvNPC}
 			/delay 5
-	  }
+		}
 	  
-	  /call CheckPlugin MQ2Nav
+		/call CheckPlugin MQ2Nav
 	  
-	  /if (${Target.ID}==${ZoneConvNPCID} && ${Target.Distance}>15) {
-		/echo Moving to Conversion NPC (\at${ZoneConvNPC}\ax).
-		/nav target
-		:Nav2Target
-		/echo . . .
-		/delay 5 ${Target.Distance}<=15
-		/if (${Target.Distance}>15) /goto :Nav2Target
-	  } 
-   
-  	  ; face target
-  	  /face fast
-	  /look 0
-  	  /delay 10	  
+		/if (${Target.ID}==${ZoneConvNPCID} && ${Target.Distance}>15) {
+			/echo Moving to Conversion NPC (\at${ZoneConvNPC}\ax).
+			/nav target
+			:Nav2Target
+			/echo . . .
+			/delay 5 ${Target.Distance}<=15
+			/if (${Target.Distance}>15) /goto :Nav2Target
+		} 
+		/face fast
+		/look 0
+		/delay 10	  
   } else {
-	 /echo You MUST be in "The plane of Knowledge" or "Marr's Temple" !!!!!!
-	 /endmacro
+		/echo You MUST be in "The plane of Knowledge" or "Marr's Temple" !!!!!!
+		/endmacro
   }
   
   /return
