@@ -67,8 +67,9 @@
   |------------------------------------
   |-- Clear targets and stop following.
   |------------------------------------
-  /squelch /e3bcgza /multiline ; /afollow off ; /followoff
-  /squelch /e3bcgza /target clear
+  /afollow off
+  /followoff
+  /target clear
   /delay 1s !${Target.ID}
   |------------------------------------
   |--MESH LOAD
