@@ -1,20 +1,21 @@
 |--------------------------------------------------------------------------------
 |
 | DC to AA / Vice versa
-| DCCONV.mac
-| Author      : Kroaking
-| Version     : 2.9
-| Syntax      : Syntax: /macro DCCONV \amParam0\ax \amParam1\ax
-|				Where: (\amParam0\ax = \agDC\ax or \agAA\ax  or \agCONVERT\ax or \agGIMME\ax) and (\amParam1\ax = # to convert or ALL)
+| DOCONV.mac
+| Author       : Kroaking
+| Version      : 3.2
+| Last Updated : 10/8/2025
+| Syntax       : Syntax: /macro DCCONV \amParam0\ax \amParam1\ax
+|				 Where: (\amParam0\ax = \agDC\ax or \agAA\ax  or \agCONVERT\ax or \agGIMME\ax) and (\amParam1\ax = # to convert or ALL)
 |
-|				Example: /macro DCCONV \amDC\ax \ay9\ax:  Converts \ay9\ax DC to \ay3\ax AA.
-|				Example: /macro DCCONV \amAA\ax \ay10\ax:  Converts \ay10\ax AA to \ay30\ax DC.
-|				Example: /macro DCCONV \amALL-AA\ax: Converts \arALL UNSPENT\ax AA to Alt Currency [\atDiamond Coin\ax].
-|				Example: /macro DCCONV \amALL-DC\ax: Converts \arALL COMBINED DC\ax to AA.
-|				Example: /macro DCCONV \amEXCHANGE\ax: Exchanges \arALL\ax Alt Currency [\atDiamond Coin\ax] ---> [\atDiamond Coin\ax].
-|				Example: /macro DCCONV \amGIMME\ax: Makes \arALL\ax group memebers give you \arALL\ax their stacked [\atDiamond Coin\ax].
-|               		Example: /macro DCCONV \amSTICKEMUP\ax: Makes \arALL\ax group memebers give you \arALL\ax their [\agCASH\ax].
-|                        ---- Use GIMME / STICKEMUP option(s) only on ONE (1) CHARACTER --- NEVER have the group run with that option !
+|				 Example: /macro DCCONV \amDC\ax \ay9\ax:  Converts \ay9\ax DC to \ay3\ax AA.
+|				 Example: /macro DCCONV \amAA\ax \ay10\ax:  Converts \ay10\ax AA to \ay30\ax DC.
+|				 Example: /macro DCCONV \amALL-AA\ax: Converts \arALL UNSPENT\ax AA to Alt Currency [\atDiamond Coin\ax].
+|				 Example: /macro DCCONV \amALL-DC\ax: Converts \arALL COMBINED DC\ax to AA.
+|				 Example: /macro DCCONV \amEXCHANGE\ax: Exchanges \arALL\ax Alt Currency [\atDiamond Coin\ax] ---> [\atDiamond Coin\ax].
+|				 Example: /macro DCCONV \amGIMME\ax: Makes \arALL\ax group memebers give you \arALL\ax their stacked [\atDiamond Coin\ax].
+|                Example: /macro DCCONV \amSTICKEMUP\ax: Makes \arALL\ax group memebers give you \arALL\ax their [\agCASH\ax].
+|                         ---- Use GIMME / STICKEMUP option(s) only on ONE (1) CHARACTER --- NEVER have the group run with that option !
 |
 |--------------------------------------------------------------------------------
 #turbo 80
@@ -25,7 +26,7 @@
   Sub Main
 
 |------------------------------------------------------------------------- 
-  /declare MacroVersion				string	outer 	3.0
+  /declare MacroVersion				string	outer 	3.2
   
   /declare CurrentGroupMemberTrader	string	outer	NULL
   /declare CurrentZone				string	outer 	${Zone.Name}
@@ -318,7 +319,15 @@
 					/delay 5
 					/goto :LoopUnTillTradeDone		
 				}				
-				|------------------------------------------------------------------					
+				|------------------------------------------------------------------	
+				
+				|------------------------------------------------------------------	
+				/call CalculateMyAssets
+				/if (${CurrentDC}>0) {
+					/echo Reclaiming DC to Alternate Currency !!!
+					/call ReclaimAltDC				
+				}
+				|------------------------------------------------------------------
 			}
 		|---------------------------------
 		/next iGroupMemberTrade
@@ -581,6 +590,13 @@ Sub GiveMeYourDC(string DCCollector, int DCCollectorID)
 		| Wait for the trade to be completed by DCCollector
 		/if (${Window[TradeWnd].Open}) {
 		:WaitingOnDCTradeFinish
+		
+			|--------------------------------------------------------
+			| ---- CODE HERE TO MAKE REQUESTOR HIT TRADE ACCEPT.
+			/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp
+			/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp		
+			|--------------------------------------------------------
+			
 		    /delay 5
 			/if (${Window[TradeWnd].Open}) /goto :WaitingOnDCTradeFinish		
 		}
@@ -711,14 +727,21 @@ Sub GiveMeYourCash(string CASHCollector, int CASHCollectorID)
 	/if (${Window[TradeWnd].Open} && !${Cursor.ID}) /notify TradeWnd TRDW_Trade_Button leftmouseup
 		
 	|--------------------------------------------------------
-	| Wait for the trade to be completed by DCCollector
+	| Wait for the trade to be completed by CASHCollector
 	/if (${Window[TradeWnd].Open}) {
 	:WaitingOnCashTradeFinish
+	
+		|--------------------------------------------------------
+		| ---- CODE HERE TO MAKE REQUESTOR HIT TRADE ACCEPT.
+		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp
+		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp		
+		|--------------------------------------------------------
+		
 	    /delay 5
 		/if (${Window[TradeWnd].Open}) /goto :WaitingOnCashTradeFinish		
 	}
 	|--------------------------------------------------------
-	
+		
 	:NoCashToTrade
 	
 		/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
@@ -867,6 +890,7 @@ Sub ReclaimAltDC
     
   /return
 |---------------------------------------------------------------------------------
+
 
 |---------------------------------------------------------------------------------
 | SUB: ShowMyAssets
