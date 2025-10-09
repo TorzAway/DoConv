@@ -632,8 +632,8 @@ Sub GiveMeYourDC(string DCCollector, int DCCollectorID)
 			/echo Trade Completed !!!!
 			| Give DCCollector command to move on to next group member.
 			/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${DCCollector} /varset PauseUntilTradeDone 0
-			/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //varset PauseUntilTradeDone 0
 			/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /varset PauseUntilTradeDone 0
+			/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //varset PauseUntilTradeDone 0
 		}
 		
 	} else {
@@ -755,9 +755,9 @@ Sub GiveMeYourCash(string CASHCollector, int CASHCollectorID)
 	
 		|--------------------------------------------------------
 		| ---- CODE HERE TO MAKE REQUESTOR HIT TRADE ACCEPT.
-		/if (${ValidCommType.Equal[E3BCS]}) /bct ${CASHCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp
-		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp
-		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp		
+		/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${CASHCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp
+		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp	
+		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp			
 		|--------------------------------------------------------
 		
 	    /delay 5
@@ -768,16 +768,16 @@ Sub GiveMeYourCash(string CASHCollector, int CASHCollectorID)
 	:NoCashToTrade
 	
 		/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
-		/if (${DebugMacro} && ${ValidCommType.Equal[E3BCS]}) /echo /bct ${CASHCollector} //varset PauseUntilTradeDone 0
-		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${CASHCollector} //varset PauseUntilTradeDone 0
+		/if (${DebugMacro} && ${ValidCommType.Equal[E3BCS]}) /echo /e3bct ${CASHCollector} /varset PauseUntilTradeDone 0
 		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /varset PauseUntilTradeDone 0
+		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${CASHCollector} //varset PauseUntilTradeDone 0
 	
 	/if (!${Window[TradeWnd].Open} && !${Cursor.ID}) {
 		/echo Trade Completed !!!!
 		| Give CASHCollector command to move on to next group member.
-		/if (${ValidCommType.Equal[E3BCS]}) /bct ${CASHCollector} //varset PauseUntilTradeDone 0
-		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //varset PauseUntilTradeDone 0
+		/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${CASHCollector} /varset PauseUntilTradeDone 0
 		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /varset PauseUntilTradeDone 0
+		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //varset PauseUntilTradeDone 0		
 	}
 	|---------------------------------
 
