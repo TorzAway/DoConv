@@ -3,7 +3,7 @@
 | DC to AA / Vice versa
 | DOCONV.mac
 | Author       : Kroaking
-| Version      : 3.2
+| Version      : 3.4
 | Last Updated : 10/8/2025
 | Syntax       : Syntax: /macro DCCONV \amParam0\ax \amParam1\ax
 |				 Where: (\amParam0\ax = \agDC\ax or \agAA\ax  or \agCONVERT\ax or \agGIMME\ax) and (\amParam1\ax = # to convert or ALL)
@@ -26,7 +26,7 @@
   Sub Main
 
 |------------------------------------------------------------------------- 
-  /declare MacroVersion				string	outer 	3.2
+  /declare MacroVersion				string	outer 	3.4
   
   /declare CurrentGroupMemberTrader	string	outer	NULL
   /declare CurrentZone				string	outer 	${Zone.Name}
@@ -55,12 +55,14 @@
   /declare GroupMemberCount 		int 	outer 	${Group.Members}
   /declare iGroupMemberTrade		int		outer	NULL
   
-  /declare PauseUntilTradeDone		int	outer	1
-  /declare ValidCommSetup			int	outer	0
+  /declare PauseUntilTradeDone		int		outer	1
+ 
+  /declare ValidCommSetup			int		outer	0
   /declare ValidCommType			string	outer	NULL
+  /declare E3PauseStateCheck		string	outer	${MQ2Mono.Query[e3,E3N.State.Basics.IsPaused]}
   
-  /declare PackSlot 				int outer 0
-  /declare ItemSlot 				int outer 0
+  /declare PackSlot 				int 	outer 0
+  /declare ItemSlot 				int 	outer 0
   
   /declare DebugMacro				bool	outer	FALSE
 |-------------------------------------------------------------------------
@@ -100,13 +102,27 @@
   /if (${GlobalParam0.Equal[DC]} || ${GlobalParam0.Equal[AA]}) {
 	  /if (!${Defined[GlobalParam1]} || (${GlobalParam1}==0)) /call DisplaySyntax
   }
+  |------------------------------- 
+   
+  |--------------------------------------------------------------------
+  |-------------------------------  
+  | --- SET COMM TYPE (Automated)
+  |--------------------------------
   
-  |-----------------------------  
-  | --- SET COMM TYPE ( PICK ONE !!!!! )
-  |-----------------------------
-  /if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2DanNet
-  |/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2EQBC
-  |-----------------------------  
+  /if (${DebugMacro}) /echo E3PauseStateCheck = (${E3PauseStateCheck})
+  
+  /if (${E3PauseStateCheck.Equal[True]} || ${E3PauseStateCheck.Equal[False]}) {		
+	/varset ValidCommSetup 1
+	/varset ValidCommType E3BCS	
+  } else {
+	/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2DanNet
+	/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) /call CheckPluginComm MQ2EQBC
+  }
+  /echo \ar--- \atCommunication state set to \ay(\ag${ValidCommSetup}\ay)
+  /echo \ar--- \atCommunication method set to \ay(\ag${ValidCommType}\ay)
+  |---------------------------------------
+  /echo |-------------------------------------------------------------|
+  |--------------------------------------------------------------------
   
   |-----------------------------
   | Dont bother checking zone or naving to ZoneConvNPC
@@ -297,8 +313,9 @@
 				/echo Requesting [\atDiamond Coin\ax] from group member (\am${iGroupMemberTrade}\ax) / (\ay${Group.Member[${iGroupMemberTrade}].CleanName}\ax \ar|\ax ID:${Group.Member[${iGroupMemberTrade}].ID})				
 				
 				/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
-				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				/if (${DebugMacro} && ${ValidCommType.Equal[E3BCS]}) /echo /e3bct ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}				
 				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /echo /dex ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}				
 				
 				|------------------------------------------------------------------
 				| --- CALL EQBC or DANNET function to relay command to group member.
@@ -307,8 +324,9 @@
 				| Execute command to group member !
 				|---- 				
 				/if (${ValidCommSetup}==1 && ${ValidCommType.NotEqual[NULL]}) {
-					/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+					/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
 					/if (${ValidCommType.Equal[MQ2DanNet]}) /dexecute ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+					/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYDC NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
 				}
 				|------------------------------------------------------------------				
 
@@ -355,7 +373,7 @@
 		}
 		
 		/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) {
-			/echo You \arMUST\ax have either [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\atGIMME\ax] function !
+			/echo You \arMUST\ax have either [\agE3NEXT\ax], [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\atGIMME\ax] function !
 			/endmacro
 		}
 		|----------------------------------------
@@ -384,7 +402,7 @@
 		}
 		
 		/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) {
-			/echo You \arMUST\ax have either [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\STICKEMUP\ax] function !
+			/echo You \arMUST\ax have either [\agE3NEXT\ax], [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\STICKEMUP\ax] function !
 			/endmacro
 		}
 		|----------------------------------------
@@ -403,8 +421,9 @@
 				/if (${DebugMacro}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
 				
 				/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
-				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				/if (${DebugMacro} && ${ValidCommType.Equal[E3BCS]}) /echo /e3bct ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
 				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /echo /dex ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
+				/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}				
 				
 				|------------------------------------------------------------------
 				| --- CALL EQBC or DANNET function to relay command to group member.
@@ -413,6 +432,7 @@
 				| Execute command to group member !
 				|---- 				
 				/if (${ValidCommSetup}==1 && ${ValidCommType.NotEqual[NULL]}) {
+					/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
 					/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${Group.Member[${iGroupMemberTrade}].CleanName} //macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
 					/if (${ValidCommType.Equal[MQ2DanNet]}) /dexecute ${Group.Member[${iGroupMemberTrade}].CleanName} /macro DoConv TRADEMYCASH NULL ${Group.Member[0].CleanName} ${Group.Member[0].ID}
 				}
@@ -453,7 +473,7 @@
 		}
 		
 		/if (${ValidCommSetup}==0 || ${ValidCommType.Equal[NULL]}) {
-			/echo You \arMUST\ax have either [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\TRADEMYCASH\ax] function !
+			/echo You \arMUST\ax have either [\agE3NEXT\ax], [\agMQ2EQBC\ax] or [\agMQ2DanNet\ax] loaded in order to use the [\TRADEMYCASH\ax] function !
 			/endmacro
 		}
 		|----------------------------------------
@@ -593,8 +613,9 @@ Sub GiveMeYourDC(string DCCollector, int DCCollectorID)
 		
 			|--------------------------------------------------------
 			| ---- CODE HERE TO MAKE REQUESTOR HIT TRADE ACCEPT.
-			/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp
-			/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp		
+			/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${DCCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp				
+			/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp	
+			/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp				
 			|--------------------------------------------------------
 			
 		    /delay 5
@@ -603,25 +624,26 @@ Sub GiveMeYourDC(string DCCollector, int DCCollectorID)
 		|--------------------------------------------------------
 		
 		/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
-		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${DCCollector} //varset PauseUntilTradeDone 0
+		/if (${DebugMacro} && ${ValidCommType.Equal[E3BCS]}) /echo /e3bct ${DCCollector} /varset PauseUntilTradeDone 0
 		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /echo /dex ${DCCollector} /varset PauseUntilTradeDone 0
+		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${DCCollector} //varset PauseUntilTradeDone 0		
 				
 		/if (!${Window[TradeWnd].Open} && !${Cursor.ID}) {
 			/echo Trade Completed !!!!
 			| Give DCCollector command to move on to next group member.
+			/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${DCCollector} /varset PauseUntilTradeDone 0
 			/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //varset PauseUntilTradeDone 0
 			/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /varset PauseUntilTradeDone 0
 		}
-		
 		
 	} else {
 		/echo \ar Sorry you don't any Diamond Coin(s) to trade right now !!!\ax
 		/g Sorry I don't have any Diamond Coin(s) to trade right now !!!
 		
 		| Give DCCollector command to move on to next group member.
-		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //varset PauseUntilTradeDone 0
+		/if (${ValidCommType.Equal[E3BCS]}) /e3bct ${DCCollector} /varset PauseUntilTradeDone 0
 		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${DCCollector} /varset PauseUntilTradeDone 0
-		
+		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${DCCollector} //varset PauseUntilTradeDone 0	
 	}
 	|---------------------------------
 
@@ -733,6 +755,7 @@ Sub GiveMeYourCash(string CASHCollector, int CASHCollectorID)
 	
 		|--------------------------------------------------------
 		| ---- CODE HERE TO MAKE REQUESTOR HIT TRADE ACCEPT.
+		/if (${ValidCommType.Equal[E3BCS]}) /bct ${CASHCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp
 		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //notify TradeWnd TRDW_Trade_Button LeftMouseUp
 		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /notify TradeWnd TRDW_Trade_Button LeftMouseUp		
 		|--------------------------------------------------------
@@ -745,12 +768,14 @@ Sub GiveMeYourCash(string CASHCollector, int CASHCollectorID)
 	:NoCashToTrade
 	
 		/if (${DebugMacro}) /echo ValidCommSetup = ${ValidCommSetup} | ValidCommType = ${ValidCommType}
+		/if (${DebugMacro} && ${ValidCommType.Equal[E3BCS]}) /echo /bct ${CASHCollector} //varset PauseUntilTradeDone 0
 		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2EQBC]}) /echo /bct ${CASHCollector} //varset PauseUntilTradeDone 0
 		/if (${DebugMacro} && ${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /varset PauseUntilTradeDone 0
 	
 	/if (!${Window[TradeWnd].Open} && !${Cursor.ID}) {
 		/echo Trade Completed !!!!
 		| Give CASHCollector command to move on to next group member.
+		/if (${ValidCommType.Equal[E3BCS]}) /bct ${CASHCollector} //varset PauseUntilTradeDone 0
 		/if (${ValidCommType.Equal[MQ2EQBC]}) /bct ${CASHCollector} //varset PauseUntilTradeDone 0
 		/if (${ValidCommType.Equal[MQ2DanNet]}) /dex ${CASHCollector} /varset PauseUntilTradeDone 0
 	}
@@ -976,7 +1001,9 @@ Sub DisplaySyntax
 		/look 0
 		/delay 10	  
   } else {
-		/echo You MUST be in "The plane of Knowledge" or "Marr's Temple" !!!!!!
+		/echo \ar ***\ax You MUST be in \ag"The plane of Knowledge"\ax
+		/echo \ar ***\ax or \ag"Marr's Temple"\ar !!!\ax
+		/echo \ar ***\ax ENDING MACRO\ar ***\ax
 		/endmacro
   }
   
@@ -1017,6 +1044,7 @@ Sub DisplaySyntax
   /return
 |---------------------------------------------------------------------------------	
 
+
 |---------------------------------------------------------------------------------
 | SUB: CheckPluginComm
 |---------------------------------------------------------------------------------
@@ -1056,6 +1084,7 @@ Sub DisplaySyntax
   /return
 |---------------------------------------------------------------------------------
 
+
 | ----------------------------------------------------------------------------
 | SUB: Check Plugin
 | ----------------------------------------------------------------------------
@@ -1074,5 +1103,3 @@ Sub DisplaySyntax
 		
     /return
 | ----------------------------------------------------------------------------
-
-	
