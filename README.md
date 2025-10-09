@@ -31,9 +31,9 @@ Conv AA = /e3bcga /macro DoConv ALL-AA
 
 Conv DC = /e3bcga /macro DoConv ALL-DC
 
-Gimme $$$ = /dex #botName# /macro DoConv STICKEMUP
+Gimme $$$ = /e3bct #botName# /macro DoConv STICKEMUP
 
-Gimme DC = /dex #botName# /macro DoConv GIMME 
+Gimme DC = /e3bct #botName# /macro DoConv GIMME 
 
 -------------------------------------------------------------------
 ![image](https://github.com/TorzAway/DoConv/blob/main/image_2024-11-13_153514090.png)
